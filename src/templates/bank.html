@@ -1,0 +1,541 @@
+<meta charset="utf-8">
+<title>Peta Perilaku Nasabah</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Konsep: aplikasi dua panel (daftar nasabah | detail). Di ponsel menjadi dua layar. Angka memakai mono, teks memakai Plus Jakarta Sans. */
+:root{
+  --bg:#eceff5; --surface:#ffffff; --surface2:#f5f7fb; --ink:#13202f; --muted:#5a6a7e; --line:#d9e0ea;
+  --accent:#1c4fd6; --accent-soft:#e2eafc; --on-accent:#ffffff;
+  --good:#0c7f58; --good-soft:#dcf3ea; --warn:#9a5b00; --warn-soft:#fbecd0; --bad:#b83225; --bad-soft:#fbe0dc;
+  --inc:#1c4fd6; --exp:#d7701f; --grid:#e3e8f0;
+  --font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d131b; --surface:#151d28; --surface2:#1b2533; --ink:#e6edf6; --muted:#93a3b8; --line:#273445;
+  --accent:#7aa2ff; --accent-soft:#1b2a4d; --on-accent:#0d131b;
+  --good:#3fcb98; --good-soft:#12342a; --warn:#e6a53f; --warn-soft:#3a2b10; --bad:#f08577; --bad-soft:#3d1c18;
+  --inc:#7aa2ff; --exp:#f2985a; --grid:#233042; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d131b; --surface:#151d28; --surface2:#1b2533; --ink:#e6edf6; --muted:#93a3b8; --line:#273445;
+  --accent:#7aa2ff; --accent-soft:#1b2a4d; --on-accent:#0d131b;
+  --good:#3fcb98; --good-soft:#12342a; --warn:#e6a53f; --warn-soft:#3a2b10; --bad:#f08577; --bad-soft:#3d1c18;
+  --inc:#7aa2ff; --exp:#f2985a; --grid:#233042; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;margin:0;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+#app{display:grid;grid-template-columns:360px minmax(0,1fr);height:100%}
+#list{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0}
+#detail{overflow-y:auto;min-width:0;position:relative}
+.bar{padding:14px max(16px,env(safe-area-inset-left,0px)) 10px 16px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.brand h1{font-size:18px;font-weight:800;margin:0;letter-spacing:-.01em}
+.brand small{color:var(--muted);font-size:12px}
+.theme{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:4px 10px;font-size:12px}
+#q{width:100%;margin-top:10px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:10px;padding:9px 12px;font:inherit}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 12px;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12px;color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+#cards{overflow-y:auto;flex:1;padding:10px 12px 20px;display:flex;flex-direction:column;gap:8px}
+.ncard{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;width:100%}
+.ncard:hover{border-color:var(--accent)}
+.ncard[aria-current=true]{border-color:var(--accent);background:var(--accent-soft)}
+.av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff}
+.ncard h3{margin:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ncard .persona{font-size:12px;color:var(--muted);margin:1px 0 6px}
+.mini{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.mini b{font-family:var(--mono);font-weight:500;color:var(--ink);font-size:12px}
+.tag{display:inline-block;font-size:11px;font-weight:600;border-radius:6px;padding:1px 7px;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.tag.good{background:var(--good-soft);color:var(--good);border-color:transparent}
+.tag.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.tag.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.tag.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+#top{display:none;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding:8px 12px;align-items:center;gap:8px}
+#top button{border:0;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:6px 12px;font-weight:600}
+.wrap{max-width:980px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 40px 16px}
+.hero{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:center;margin-bottom:14px}
+.hero .av{width:64px;height:64px;font-size:22px}
+.hero h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em}
+.hero p{margin:2px 0 6px;color:var(--muted)}
+.tabs{position:sticky;top:0;z-index:4;background:var(--bg);display:flex;gap:6px;overflow-x:auto;padding:8px 0 10px;margin:0 0 6px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 13px;font-weight:600;font-size:13px;color:var(--muted)}
+.tab[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.card.span{grid-column:1/-1}
+.card>header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.card h3{margin:0;font-size:14px;font-weight:700}
+.qcode{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 6px}
+.note{color:var(--muted);font-size:12px;margin:8px 0 0}
+.empty{color:var(--muted);font-size:13px;background:var(--surface2);border-radius:10px;padding:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpi small{display:block;color:var(--muted);font-size:12px}
+.kpi strong{display:block;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
+.kpi strong.sm{font-size:15px;line-height:1.35;padding-top:3px}
+.kpi span{font-size:12px;color:var(--muted)}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:600;text-align:right;font-family:var(--mono);font-size:13px;overflow-wrap:anywhere}
+.kv dd.t{font-family:var(--font)}
+.insights{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.insights li{display:grid;grid-template-columns:8px minmax(0,1fr);gap:10px}
+.insights li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:7px}
+.insights li.warn::before{background:var(--warn)} .insights li.bad::before{background:var(--bad)} .insights li.good::before{background:var(--good)}
+.brow{display:grid;grid-template-columns:minmax(80px,38%) minmax(0,1fr) auto;gap:10px;align-items:center;margin:6px 0}
+.brow .l{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .tr{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.brow .fl{height:100%;border-radius:5px;background:var(--accent)}
+.brow .fl.exp{background:var(--exp)} .brow .fl.good{background:var(--good)} .brow .fl.warn{background:var(--warn)} .brow .fl.bad{background:var(--bad)}
+.brow .v{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:42px;text-align:right}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:11.5px;position:sticky;top:0;background:var(--surface)}
+td.n{font-family:var(--mono);text-align:right}
+.fgroup{margin-bottom:12px}
+.fgroup h4{margin:0 0 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fc{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--surface2);min-width:0}
+.fc b{display:block;font-size:12.5px}
+.fc small{font-family:var(--mono);color:var(--muted);font-size:11px}
+.fc.used{background:var(--good-soft);border-color:transparent} .fc.used b{color:var(--good)}
+.fc.open{background:var(--warn-soft);border-color:transparent} .fc.open b{color:var(--warn)}
+.fc.none{opacity:.7}
+.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:6px 0 4px}
+.step{font-size:10.5px;text-align:center;padding:6px 2px;border-radius:8px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);line-height:1.25}
+.step.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
+.step.done{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.step.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent;font-weight:700}
+.qlist details{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:8px}
+.qlist summary{cursor:pointer;padding:10px 14px;display:flex;gap:10px;align-items:baseline;font-weight:600}
+.qlist summary span:last-child{color:var(--muted);font-weight:400;font-size:12px;margin-left:auto;white-space:nowrap}
+.qlist .body{padding:0 14px 12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+svg text{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+.foot{color:var(--muted);font-size:12px;margin-top:22px}
+@media (max-width:900px){
+  #app{display:block;height:auto}
+  #list{height:100vh;border-right:0}
+  #detail{display:none;overflow:visible}
+  #app[data-view=detail] #list{display:none}
+  #app[data-view=detail] #detail{display:block}
+  #top{display:flex}
+  .wrap{padding-top:12px}
+}
+@media (prefers-reduced-motion:no-preference){.card,.kpi{animation:in .25s ease-out both}@keyframes in{from{opacity:.0;transform:translateY(4px)}to{opacity:1;transform:none}}}
+
+/* ===== v3 skin: modern mobile-banking look ===== */
+:root{--bg:#f2f5fc;--surface:#fff;--surface2:#f4f7fd;--ink:#0a1b3d;--muted:#5f6f8c;--line:#e6ebf6;--accent:#1553e6;--accent-soft:#eaf0ff;--inc:#1553e6;--sh:0 1px 2px rgba(16,40,100,.05),0 10px 28px rgba(16,40,100,.07);--hero:linear-gradient(140deg,#0b2f9e 0%,#1553e6 52%,#3b82f6 100%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hero:linear-gradient(140deg,#0b1f5c 0%,#12399f 55%,#2257d6 100%);--sh:none}}
+:root[data-theme="dark"]{--hero:linear-gradient(140deg,#0b1f5c 0%,#12399f 55%,#2257d6 100%);--sh:none}
+#list{border-right:0;box-shadow:0 0 0 1px var(--line),8px 0 30px rgba(16,40,100,.06)}
+.bar{background:var(--hero);color:#fff;padding:max(16px,env(safe-area-inset-top)) 16px 16px;border-radius:0 0 24px 24px;box-shadow:0 12px 28px rgba(21,83,230,.25);position:relative;z-index:2}
+.brand h1{color:#fff;font-size:19px}.brand small{color:rgba(255,255,255,.78)}
+.theme{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:99px;padding:6px 13px;font-weight:600}
+#q{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:14px;padding:11px 14px}
+#q::placeholder{color:rgba(255,255,255,.75)}#q:focus-visible{outline-color:#fff}
+.chips{border-bottom:0;padding:14px 16px 10px}
+.chip{border-color:transparent;background:var(--surface2);padding:6px 13px;font-weight:600}
+.chip[aria-pressed=true]{background:linear-gradient(135deg,#1553e6,#3b82f6);color:#fff;box-shadow:0 6px 14px rgba(21,83,230,.28)}
+#cards{gap:10px;padding:6px 14px 24px}
+.ncard{border-color:transparent;border-radius:18px;box-shadow:var(--sh);padding:13px;transition:transform .12s,box-shadow .12s}
+.ncard:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(16,40,100,.12);border-color:transparent}
+.ncard[aria-current=true]{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.ncard h3{font-size:14.5px}
+.tag{border-radius:99px;padding:2px 9px}
+#top{background:var(--hero);border-bottom:0;color:#fff}#top button{background:rgba(255,255,255,.18);color:#fff;border-radius:99px;padding:6px 14px}
+.hero{position:relative;overflow:hidden;background:var(--hero);color:#fff;border-radius:26px;padding:20px;margin-bottom:16px;box-shadow:0 18px 40px rgba(21,83,230,.28)}
+.hero::before{content:"";position:absolute;width:220px;height:220px;right:-70px;top:-100px;border-radius:50%;background:rgba(255,255,255,.09);pointer-events:none}
+.hero>*{position:relative}.hero p{color:rgba(255,255,255,.82)}.hero h2{font-size:24px}
+.hero .av{box-shadow:0 0 0 3px rgba(255,255,255,.55)}
+.hero .tag{border:0}
+.tabs{padding:10px 0 12px}
+.tab{border-color:transparent;background:var(--surface);box-shadow:0 1px 2px rgba(16,40,100,.08);border-radius:99px;padding:7px 15px}
+.tab[aria-selected=true]{background:linear-gradient(135deg,#1553e6,#3b82f6);border-color:transparent;color:#fff;box-shadow:0 6px 14px rgba(21,83,230,.3)}
+.card,.kpi{border-color:transparent;border-radius:20px;box-shadow:var(--sh);padding:16px 18px}
+.kpi strong{font-size:23px}
+.qcode{border-radius:99px;background:var(--surface2);border-color:transparent;padding:1px 8px}
+.insights li::before{width:9px;height:9px}
+.brow .tr{height:8px;border-radius:8px}.brow .fl{border-radius:8px}
+.fc{border-radius:12px}.step{border-radius:10px}
+.qlist details{border-radius:16px;border-color:transparent;box-shadow:var(--sh)}
+.empty{border-radius:14px}
+th{background:var(--surface)}
+@media (max-width:900px){#list{box-shadow:none}.bar{border-radius:0 0 22px 22px}}
+
+/* ===== v4: icon-forward ===== */
+svg.i{display:inline-block;width:1.15em;height:1.15em;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em}
+.theme{display:grid;place-items:center;width:36px;height:36px;padding:0!important;border-radius:50%!important}.theme svg.i{width:19px;height:19px;vertical-align:0}
+.chip{display:inline-flex;align-items:center;gap:6px}.chip svg.i{width:14px;height:14px}
+.tab{display:inline-flex;align-items:center;gap:7px}.tab svg.i{width:16px;height:16px}
+.mini{gap:14px}.mini span{display:inline-flex;align-items:center;gap:5px}.mini svg.i{width:15px;height:15px;color:var(--accent)}
+.kpi{position:relative}.kpi .ki{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;margin-bottom:8px;background:var(--accent-soft);color:var(--accent)}.kpi .ki svg.i{width:18px;height:18px;vertical-align:0}
+.card>header h3{display:flex;align-items:center;gap:9px}.card .qi{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:var(--accent-soft);color:var(--accent)}.card .qi svg.i{width:16px;height:16px;vertical-align:0}
+.insights li{grid-template-columns:22px minmax(0,1fr)}.insights li::before{display:none}.insights li>i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;margin-top:0;color:var(--accent);background:var(--accent-soft)}
+.insights li>i svg.i{width:13px;height:13px;vertical-align:0}
+.insights li.warn>i{color:var(--warn);background:var(--warn-soft)}.insights li.bad>i{color:var(--bad);background:var(--bad-soft)}.insights li.good>i{color:var(--good);background:var(--good-soft)}
+.lgd{display:flex;flex-wrap:wrap;gap:4px 12px;padding:2px 16px 6px;font-size:11px;color:var(--muted)}.lgd span{display:inline-flex;align-items:center;gap:4px}.lgd svg.i{width:13px;height:13px;color:var(--accent)}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M12 3v1M5.6 5.6l.7.7M3 12h1M18.4 5.6l-.7.7M21 12h-1"/><path d="M9 18h6M10 21h4M8.5 14.5A5 5 0 1 1 15.5 14.5c-.8.7-1.5 1.5-1.5 2.5h-4c0-1-.7-1.8-1.5-2.5z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M21 19H3"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></symbol><symbol id="i-calplus" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v5M9.5 15.5h5"/></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-in" viewBox="0 0 24 24"><path d="M17 7 7 17M17 17H7V7"/></symbol><symbol id="i-out" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v2"/><path d="M3 6v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 12h-4a2 2 0 0 0 0 4h4z"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8M15 7h6v6"/></symbol><symbol id="i-down" viewBox="0 0 24 24"><path d="m3 7 6 6 4-4 8 8M15 17h6v-6"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></symbol><symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol><symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 10 12 4l9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6 15h3"/></symbol><symbol id="i-cash" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M14.5 21.7a.5.5 0 0 0 .9 0l6.5-19a.5.5 0 0 0-.6-.6l-19 6.5a.5.5 0 0 0 0 .9l7.9 3.2a2 2 0 0 1 1.1 1.1z"/><path d="M21.9 2.1 10.9 13.1"/></symbol><symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h3M21 17v4"/></symbol><symbol id="i-percent" viewBox="0 0 24 24"><path d="m19 5-14 14"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></symbol><symbol id="i-coins" viewBox="0 0 24 24"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.7A6 6 0 1 1 9.7 15.5"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18h2"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol><symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol><symbol id="i-moonstar" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/><path d="M18 3v4M16 5h4"/></symbol><symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M7 17a5 5 0 0 1 10 0M2 17h2M20 17h2M3 21h18M5.6 10.6l1.4 1.4M18.4 10.6 17 12M12 3v5M10 5l2-2 2 2"/></symbol><symbol id="i-sunset" viewBox="0 0 24 24"><path d="M7 17a5 5 0 0 1 10 0M2 17h2M20 17h2M3 21h18M5.6 10.6l1.4 1.4M18.4 10.6 17 12M12 3v5M10 6l2 2 2-2"/></symbol><symbol id="i-utensils" viewBox="0 0 24 24"><path d="M5 3v8a2 2 0 0 0 2 2v8M9 3v8a2 2 0 0 1-2 2M17 3c-2 2-3 5-3 8h3v10"/></symbol><symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2 3h3l2.5 12h11L21 7H6"/></symbol><symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/></symbol><symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol><symbol id="i-fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V9l-3-3M6.5 8h5"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol><symbol id="i-bus" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="13" rx="3"/><path d="M4 11h16M8 20v-3M16 20v-3"/></symbol><symbol id="i-cap" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol><symbol id="i-hash" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/></symbol><symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3M14 9l2 2"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0"/><path d="m12 17 4-5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol><symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol><symbol id="i-moonsun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></symbol></defs></svg>
+<div id="app" data-view="list">
+  <aside id="list" aria-label="Daftar nasabah">
+    <div class="bar">
+      <div class="brand"><div><h1>Peta Perilaku Nasabah</h1><small id="sub"></small></div><button class="theme" id="themeBtn" type="button" aria-label="Ganti tema" title="Ganti tema"><svg class="i" aria-hidden="true"><use href="#i-moonsun"/></svg></button></div>
+      <input id="q" type="search" placeholder="Cari nama, pekerjaan, atau persona" aria-label="Cari nasabah">
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter"></div>
+    <div class="lgd" aria-label="Arti ikon"><span><svg class="i"><use href="#i-gauge"/></svg>skor</span><span><svg class="i"><use href="#i-phone"/></svg>sesi 90 hari</span><span><svg class="i"><use href="#i-swap"/></svg>transaksi 12 bln</span><span><svg class="i"><use href="#i-coins"/></svg>pinjaman</span></div>
+    <div id="cards"></div>
+  </aside>
+  <main id="detail">
+    <div id="top"><button type="button" id="back">&larr; Daftar</button><strong id="topName"></strong></div>
+    <div class="wrap" id="wrap"></div>
+  </main>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+const TITLES = /*TITLES*/null;
+const PERSONA = /*PERSONA*/null;
+const META = /*META*/null;
+
+/* ---------- util ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const ico=(n,c='')=>`<svg class="i ${c}" aria-hidden="true" focusable="false"><use href="#i-${n}"/></svg>`;
+const TABI={ringkasan:'layers',transaksi:'swap',arus:'chart',fitur:'spark',gajian:'cash',cicilan:'cal',kredit:'coins',kartu:'card',engagement:'activity',data:'list'};
+const CHI={'Semua':'users','Aktif tinggi':'up','Aktif ringan':'activity','Berhenti':'alert','Berkredit':'coins','Tanpa kredit':'wallet'};
+const KPI_I={'Skor kesehatan':'gauge','Segmen RFM':'users','Peringatan churn':'alert','Arus kas 12 bulan':'chart'};
+const QI={Z:'user',A:'swap',B:'chart',C:'spark',D:'cash',E:'cal',F:'cal',G:'coins',H:'card',I:'activity'};
+const INSI={bad:'warn',warn:'alert',good:'check',acc:'info'};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf = new Intl.NumberFormat('id-ID');
+const n0 = v => v == null ? '-' : nf.format(Math.round(v));
+const n1 = v => v == null ? '-' : new Intl.NumberFormat('id-ID', {maximumFractionDigits: 1}).format(v);
+const pct = v => v == null ? '-' : n1(v) + '%';
+function rp(v){ if (v == null) return '-'; const a = Math.abs(v), s = v < 0 ? '-' : '';
+  if (a >= 1e9) return s + 'Rp ' + n1(a / 1e9) + ' M';
+  if (a >= 1e6) return s + 'Rp ' + n1(a / 1e6) + ' jt';
+  if (a >= 1e3) return s + 'Rp ' + n0(a / 1e3) + ' rb';
+  return s + 'Rp ' + n0(a); }
+const TX = {QRIS_PAYMENT:'QRIS',EWALLET_TOPUP:'Top-up e-wallet',PULSA_DATA:'Pulsa & data',TRANSFER_BANK:'Transfer bank',TRANSFER_INTERNAL:'Transfer antar rekening',BILL_PAYMENT:'Tagihan',CARD_CONTACTLESS:'Kartu contactless',CARD_POS:'Kartu POS',CARD_ONLINE:'Kartu online',CARD_INTL:'Kartu luar negeri',ATM_WITHDRAWAL:'Tarik tunai ATM',LOAN_INSTALLMENT:'Cicilan',ADMIN_FEE:'Biaya admin',SAVINGS_OUT:'Tarik tabungan'};
+const FT = {CEK_SALDO:'Cek saldo',MUTASI:'Mutasi',QRIS:'QRIS',TRANSFER:'Transfer',TOPUP_EWALLET:'Top-up e-wallet',TAGIHAN:'Tagihan',PULSA_DATA:'Pulsa & data',PROMO:'Promo',BANTUAN:'Bantuan',PROFIL:'Profil',KARTU:'Kartu',JADWAL_BAYAR:'Jadwal Bayar',PAYLATER:'Paylater',KTA:'KTA',CICILAN:'Cicilan'};
+const CAT = {TRANSACTION:'Transaksi',INQUIRY:'Informasi rekening',CREDIT:'Kredit',SETTING:'Pengaturan',INFO:'Info'};
+const tx = k => TX[k] || k || '-';
+const ft = k => FT[k] || k;
+const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const mon = s => { const d = String(s).slice(0, 7).split('-'); return BLN[+d[1] - 1] + ' ' + d[0].slice(2); };
+const qtr = s => { const d = String(s).split('-'); return 'K' + (Math.floor((+d[1] - 1) / 3) + 1) + ' ' + d[0].slice(2); };
+const dmy = s => { if (!s) return '-'; const d = String(s).slice(0, 10).split('-'); return +d[2] + ' ' + BLN[+d[1] - 1] + ' ' + d[0]; };
+const tone = {
+  'Sehat (>= 80)':'good','Cukup (60-79)':'acc','Perlu perhatian (40-59)':'warn','Berisiko (< 40)':'bad',
+  NORMAL:'good','AKTIVITAS RENDAH':'warn',WASPADA:'warn',KRITIS:'bad','SUDAH NONAKTIF':'bad',
+  SEHAT:'good',PANTAU:'acc',TINGGI:'bad',SEDANG:'warn',RENDAH:'good',
+  'Defisit kronis':'bad',Boros:'bad',Tipis:'warn',Seimbang:'acc',Hemat:'good',
+  AKTIF:'good','MENURUN (> 30 hari)':'warn','TIDUR (> 60 hari)':'bad','CHURN (dinonaktifkan)':'bad','BARU (<= 3 bulan)':'acc',
+  DIPAKAI:'good','HANYA DIBUKA':'warn','BELUM PERNAH DIBUKA':'',
+  'PERNAH TAPI BATAL':'warn','BELUM PERNAH':'','TIDAK PUNYA CICILAN':'',
+  MEMBAIK:'good',MEMBURUK:'bad',SAMA:'acc'
+};
+const T = (txt, t) => `<span class="tag ${t ?? tone[txt] ?? ''}">${esc(txt)}</span>`;
+const hue = id => (id * 47) % 360;
+const initials = n => n.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const av = (c, cls = '') => `<div class="av ${cls}" style="background:hsl(${hue(c.customer_id)} 42% 38%)" aria-hidden="true">${esc(initials(c.full_name))}</div>`;
+
+/* ---------- index ---------- */
+const IDX = {};
+for (const [lab, rows] of Object.entries(DATA)) { IDX[lab] = {}; for (const r of rows) (IDX[lab][r.customer_id] ||= []).push(r); }
+const rowsOf = (lab, id) => IDX[lab]?.[id] || [];
+const one = (lab, id) => rowsOf(lab, id)[0] || null;
+const CUST = META.map(m => ({...one('Z1', m.customer_id), persona: m.persona, group: m.group, spark: m.spark}));
+
+/* ---------- components ---------- */
+const card = (title, code, body, opts = {}) => `<section class="card ${opts.span ? 'span' : ''}"><header><h3><span class="qi">${ico(QI[code[0]] || 'dots')}</span>${esc(title)}</h3><span class="qcode" title="${esc(TITLES[code] || '')}">${code}</span></header>${body}${opts.note ? `<p class="note">${opts.note}</p>` : ''}</section>`;
+const empty = msg => `<p class="empty">${msg}</p>`;
+const kv = pairs => `<dl class="kv">${pairs.filter(Boolean).map(([k, v, raw]) => `<dt>${esc(k)}</dt><dd class="${raw ? 't' : ''}">${raw ? v : esc(v ?? '-')}</dd>`).join('')}</dl>`;
+function bars(items, o = {}) {
+  const max = o.max ?? Math.max(1, ...items.map(i => i.value || 0));
+  return items.map(i => `<div class="brow"><span class="l" title="${esc(i.label)}">${esc(i.label)}</span><span class="tr"><span class="fl ${i.tone || ''}" style="display:block;width:${Math.max(0, Math.min(100, 100 * (i.value || 0) / max))}%"></span></span><span class="v">${esc(i.text ?? n0(i.value))}</span></div>`).join('');
+}
+function table(cols, rows, o = {}) {
+  if (!rows.length) return empty('Tidak ada baris.');
+  const head = cols.map(c => `<th>${esc(c.h)}</th>`).join('');
+  const body = rows.slice(0, o.limit || 60).map(r => `<tr>${cols.map(c => { const v = c.f ? c.f(r) : r[c.k]; return `<td class="${c.n ? 'n' : ''}">${c.raw ? v : esc(v ?? '-')}</td>`; }).join('')}</tr>`).join('');
+  return `<div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>${rows.length > (o.limit || 60) ? `<p class="note">Menampilkan ${o.limit || 60} dari ${rows.length} baris.</p>` : ''}`;
+}
+function barChart(series, o) {
+  // series: [{label, a, b}] a = pemasukan, b = pengeluaran ; o: {h, fmt}
+  const H = o.h || 170, pl = 38, pb = 22, pt = 8, bw = 9, gap = 6, W = pl + series.length * (2 * bw + gap) + 8;
+  const max = Math.max(1, ...series.map(s => Math.max(s.a || 0, s.b || 0)));
+  const y = v => pt + (H - pt - pb) * (1 - v / max);
+  let g = '';
+  for (const f of [0, .5, 1]) g += `<line x1="${pl}" x2="${W}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="var(--grid)"/><text x="${pl - 4}" y="${y(max * f) + 3}" text-anchor="end">${o.fmt(max * f)}</text>`;
+  series.forEach((s, i) => {
+    const x = pl + 4 + i * (2 * bw + gap);
+    const def = (s.b || 0) > (s.a || 0);
+    g += `<rect x="${x}" y="${y(s.a || 0)}" width="${bw}" height="${H - pb - y(s.a || 0)}" rx="2" fill="var(--inc)"><title>${esc(s.label)} pemasukan ${o.fmt(s.a || 0)}</title></rect>`;
+    g += `<rect x="${x + bw}" y="${y(s.b || 0)}" width="${bw}" height="${H - pb - y(s.b || 0)}" rx="2" fill="var(--exp)"><title>${esc(s.label)} pengeluaran ${o.fmt(s.b || 0)}</title></rect>`;
+    if (def) g += `<circle cx="${x + bw}" cy="${H - 8}" r="2.5" fill="var(--bad)"/>`;
+    if (i % 3 === 0) g += `<text x="${x}" y="${H - 9}" ${def ? '' : ''}>${esc(s.label)}</text>`;
+  });
+  return `<div class="scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">${g}</svg></div>`;
+}
+function singleBars(series, o) {
+  const H = o.h || 130, pl = 30, pb = 20, pt = 8, bw = 12, gap = 5, W = pl + series.length * (bw + gap) + 8;
+  const max = o.max ?? Math.max(1, ...series.map(s => s.v || 0));
+  const y = v => pt + (H - pt - pb) * (1 - v / max);
+  let g = '';
+  for (const f of [0, 1]) g += `<line x1="${pl}" x2="${W}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="var(--grid)"/><text x="${pl - 4}" y="${y(max * f) + 3}" text-anchor="end">${o.fmt ? o.fmt(max * f) : n0(max * f)}</text>`;
+  if (o.line != null) g += `<line x1="${pl}" x2="${W}" y1="${y(o.line)}" y2="${y(o.line)}" stroke="var(--bad)" stroke-dasharray="3 3"/>`;
+  series.forEach((s, i) => { const x = pl + 4 + i * (bw + gap);
+    g += `<rect x="${x}" y="${y(s.v || 0)}" width="${bw}" height="${Math.max(1, H - pb - y(s.v || 0))}" rx="2" fill="${s.c || 'var(--accent)'}"><title>${esc(s.label)}: ${o.fmt ? o.fmt(s.v || 0) : n0(s.v || 0)}</title></rect>`;
+    if (i % (o.every || 3) === 0) g += `<text x="${x}" y="${H - 6}">${esc(s.label)}</text>`; });
+  return `<div class="scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">${g}</svg></div>`;
+}
+const yesno = v => v === true ? 'Ya' : v === false ? 'Tidak' : '-';
+
+/* ---------- tab renderers ---------- */
+function insights(c) {
+  const id = c.customer_id, out = [];
+  const add = (t, txt) => out.push(`<li class="${t}"><i>${ico(INSI[t] || 'info')}</i><span>${txt}</span></li>`);
+  const b2 = one('B2', id), z = c, e4 = one('E4', id), f1 = one('F1', id), i7 = one('I7', id), d3 = one('D3', id), d5 = one('D5', id), h2 = one('H2', id), c2 = one('C2', id);
+  if (z.tahap_siklus && z.tahap_siklus.startsWith('CHURN')) add('bad', `Akun sudah <b>dinonaktifkan</b>; login terakhir ${z.hari_sejak_login_terakhir} hari lalu.`);
+  else if (i7 && i7.peringatan !== 'NORMAL') add('warn', `Peringatan churn <b>${esc(i7.peringatan)}</b>: login 90 hari terakhir ${i7.login_90h_terakhir} vs ${i7.login_90h_sebelumnya} sebelumnya.`);
+  if (b2 && b2.bulan_defisit >= 1) add(b2.bulan_defisit >= 6 ? 'bad' : 'warn', `Pengeluaran melebihi pemasukan di <b>${b2.bulan_defisit} dari ${b2.bulan_ada_data} bulan</b> terakhir${b2.maks_defisit_berturut >= 3 ? ` (terpanjang ${b2.maks_defisit_berturut} bulan berturut-turut)` : ''}.`);
+  else if (b2) add('good', `Tidak ada bulan defisit dalam 12 bulan terakhir; rasio keluar/masuk ${b2.rasio_keluar_masuk}.`);
+  if (d3 && d3.tipe_belanja !== 'Merata') add('warn', `Belanja menumpuk di awal siklus gaji: <b>${esc(d3.tipe_belanja)}</b>.`);
+  if (d5 && d5.kesiapan !== 'Aman') add('warn', `Saldo menjelang gajian ${d5.kesiapan.toLowerCase()} (${n0(d5.pct_siklus_saldo_habis)}% siklus hampir habis).`);
+  if (e4 && e4.pinjaman_aktif > 0) {
+    if (f1 && f1.status_jadwal_cicilan !== 'AKTIF' && (e4.pct_telat_6bln || 0) >= 30) add('bad', `<b>${n0(e4.pct_telat_6bln)}%</b> cicilan 6 bulan terakhir telat dan Jadwal Bayar belum aktif: kandidat penawaran.`);
+    else if (f1 && f1.status_jadwal_cicilan === 'AKTIF') add('good', `Jadwal Bayar cicilan aktif${e4.n_telat_6bln ? '' : '; tidak ada keterlambatan 6 bulan terakhir'}.`);
+    else add('acc', `${e4.pinjaman_aktif} pinjaman aktif, beban ${esc(e4.kategori_beban)}.`);
+  }
+  if (c2 && c2.n_fitur_hanya_dibuka >= 4) add('warn', `${c2.n_fitur_hanya_dibuka} fitur hanya dibuka: ${esc((c2.fitur_hanya_dibuka || '').split(', ').map(ft).join(', '))}.`);
+  if (h2 && h2.pct_cashless_12bln != null) add(h2.pct_cashless_12bln >= 90 ? 'good' : 'acc', `Belanja <b>${n0(h2.pct_cashless_12bln)}%</b> non-tunai (${esc(h2.kategori_cashless.toLowerCase())}).`);
+  return `<ul class="insights">${out.join('')}</ul>`;
+}
+function tabRingkasan(c) {
+  const id = c.customer_id;
+  const kp = (l, v, s, t, sm) => `<div class="kpi"><span class="ki">${ico(KPI_I[l] || 'dots')}</span><small>${l}</small><strong class="${sm ? 'sm' : ''}">${v}</strong><span>${s}</span></div>`;
+  const z = c;
+  return `<div class="kpis">
+    ${kp('Skor kesehatan', `<span class="num">${n0(z.skor_kesehatan)}</span><span style="font-size:13px;color:var(--muted)"> / 100</span>`, T(z.kategori_kesehatan))}
+    ${kp('Segmen RFM', esc((z.segmen_rfm || '-').split(' (')[0]), (z.segmen_rfm.match(/\((.*)\)/) || [])[1] || '&nbsp;', '', true)}
+    ${kp('Peringatan churn', T(z.peringatan_churn), `login terakhir ${z.hari_sejak_login_terakhir ?? '-'} hari lalu`, '', true)}
+    ${kp('Arus kas 12 bulan', T(z.kategori_arus || '-'), z.rata_pemasukan != null ? `rata-rata masuk ${rp(z.rata_pemasukan)}` : '&nbsp;', '', true)}
+  </div>
+  <div class="grid">
+    ${card('Temuan otomatis', 'Z1', insights(c), {span: true})}
+    ${card('Profil dan pola', 'Z1', kv([
+      ['Penghasilan terdaftar', rp(z.penghasilan_terdaftar)], ['Usia di aplikasi', z.usia_bulan + ' bulan'],
+      ['Jenis transaksi utama', `${tx(z.jenis_transaksi_utama)} (${pct(z.pct_jenis_utama)})`], ['Transaksi keluar 12 bln', n0(z.trx_keluar_12bln)],
+      ['Pola pemasukan', `${z.pola_pemasukan || '-'}${z.tanggal_gajian ? ' tgl ' + z.tanggal_gajian : ''}`], ['Kestabilan', z.kestabilan_gajian || '-'],
+      ['Fitur dipakai / hanya dibuka', `${z.n_fitur_dipakai} / ${z.n_fitur_hanya_dibuka}`],
+    ]))}
+    ${card('Kredit dan Jadwal Bayar', 'Z1', kv([
+      ['Pinjaman aktif', z.pinjaman_aktif == null ? 'Tidak punya' : `${z.pinjaman_aktif} (paylater ${z.paylater_aktif}, KTA ${z.kta_aktif})`],
+      ['Cicilan per bulan', z.cicilan_bulanan == null ? '-' : rp(z.cicilan_bulanan)], ['Beban terhadap penghasilan', z.kategori_beban || '-'],
+      ['Telat 6 bulan terakhir', z.pct_telat_6bln == null ? '-' : pct(z.pct_telat_6bln)], ['Risiko kredit', z.tingkat_risiko_kredit ? `${z.tingkat_risiko_kredit} (${z.skor_risiko_kredit})` : '-'],
+      ['Jadwal Bayar cicilan', z.status_jadwal_cicilan], ['Jadwal tagihan/transfer', z.status_jadwal_tagihan_transfer],
+      ['Buka menu Jadwal Bayar', z.buka_menu_jadwal + ' kali'],
+      ['Saran', z.saran_jadwal_bayar === '-' ? 'Tidak ada' : `<span class="tag bad">${esc(z.saran_jadwal_bayar)}</span>`, z.saran_jadwal_bayar !== '-'],
+    ]))}
+  </div>`;
+}
+function tabTransaksi(c) {
+  const id = c.customer_id, a3 = one('A3', id), a1 = one('A1', id), a4 = one('A4', id), a2 = rowsOf('A2', id);
+  const items = a3 ? [['qris','QRIS'],['topup_ewallet','Top-up e-wallet'],['pulsa_data','Pulsa & data'],['transfer','Transfer'],['tagihan','Tagihan'],['kartu','Kartu'],['tarik_tunai','Tarik tunai'],['cicilan','Cicilan']].map(([k, l]) => ({label: l, value: a3[k]})).sort((x, y) => y.value - x.value) : [];
+  const chg = a3 && a3.perubahan_pct != null ? `${a3.perubahan_pct > 0 ? '+' : ''}${n1(a3.perubahan_pct)}% dibanding 12 bulan sebelumnya (${n0(a3.total_12bln_sebelumnya)} transaksi)` : 'Belum ada pembanding 12 bulan sebelumnya yang cukup.';
+  const dp = a4 ? [['Dini hari (00-04)', a4.pct_dini_hari], ['Pagi (05-10)', a4.pct_pagi], ['Siang (11-14)', a4.pct_siang], ['Sore (15-18)', a4.pct_sore], ['Malam (19-23)', a4.pct_malam]].map(([l, v]) => ({label: l, value: v, text: pct(v)})) : [];
+  const tl = a2.slice(-8).map(r => `<div class="fc ${r.perubahan === 'BERGESER' ? 'open' : ''}"><b>${esc(qtr(r.kuartal))}</b><small>${esc(tx(r.jenis_dominan))} ${n0(r.pct_dominan)}%</small></div>`).join('');
+  return `<div class="grid">
+    ${card('Jenis transaksi, 12 bulan terakhir', 'A3', a3 ? bars(items) : empty('Tidak ada data.'), {note: esc(chg)})}
+    ${card('Tiga jenis teratas', 'A1', a1 ? bars([[a1.jenis_1, a1.pct_1], [a1.jenis_2, a1.pct_2], [a1.jenis_3, a1.pct_3]].filter(x => x[0]).map(([k, v]) => ({label: tx(k), value: v, text: pct(v)})), {max: 100}) : empty('Tidak ada data.'), {note: a1 ? `${a1.jml_jenis_dipakai} jenis dipakai dari ${n0(a1.trx_keluar_12bln)} transaksi keluar.` : ''})}
+    ${card('Jenis dominan per kuartal', 'A2', a2.length ? `<div class="fchips">${tl}</div>` : empty('Tidak ada data.'), {note: 'Kotak kuning menandai kuartal ketika jenis dominan bergeser dari kuartal sebelumnya.'})}
+    ${card('Kapan bertransaksi', 'A4', a4 ? bars(dp, {max: 100}) + `<div style="margin-top:10px">${kv([['Jam puncak', String(a4.jam_puncak).padStart(2, '0') + ':00'], ['Hari puncak', a4.hari_puncak], ['Akhir pekan', pct(a4.pct_akhir_pekan)], ['Tanggal 1-5', pct(a4.pct_tgl_1_5)], ['Tanggal 25-akhir', pct(a4.pct_tgl_25_akhir)]])}</div>` : empty('Tidak ada data.'))}
+  </div>`;
+}
+function tabArus(c) {
+  const id = c.customer_id, b1 = rowsOf('B1', id).slice(-24), b2 = one('B2', id), b3 = one('B3', id), b4 = one('B4', id), b5 = one('B5', id);
+  const chart = b1.length ? barChart(b1.map(r => ({label: mon(r.bulan), a: r.pemasukan, b: r.pengeluaran})), {fmt: rp, aria: 'Pemasukan dan pengeluaran per bulan', h: 180}) + `<div class="legend"><span><i style="background:var(--inc)"></i>Pemasukan</span><span><i style="background:var(--exp)"></i>Pengeluaran</span><span><i style="background:var(--bad);border-radius:50%"></i>Bulan defisit</span></div>` : empty('Tidak ada data.');
+  const src = b3 ? bars([['Gaji', b3.pct_gaji], ['Transfer masuk', b3.pct_transfer_masuk], ['Setoran tunai', b3.pct_setoran_tunai], ['Bunga', b3.pct_bunga]].map(([l, v]) => ({label: l, value: v, text: pct(v)})), {max: 100}) : '';
+  const mer = b4 && b4.kategori_1 ? bars([[b4.kategori_1, b4.pct_1], [b4.kategori_2, b4.pct_2], [b4.kategori_3, b4.pct_3]].filter(x => x[0]).map(([l, v]) => ({label: l, value: v, text: pct(v)})), {max: 100}) : empty('Tidak ada belanja merchant.');
+  return `<div class="grid">
+    ${card('Pemasukan vs pengeluaran per bulan', 'B1', chart, {span: true, note: 'Batang menampilkan 24 bulan terakhir; geser ke samping bila perlu.'})}
+    ${card('Ringkasan 12 bulan penuh', 'B2', b2 ? kv([['Kategori', T(b2.kategori_arus), true], ['Rata-rata pemasukan', rp(b2.rata_pemasukan)], ['Rata-rata pengeluaran', rp(b2.rata_pengeluaran)], ['Rasio keluar/masuk', String(b2.rasio_keluar_masuk)], ['Bulan defisit', `${b2.bulan_defisit} dari ${b2.bulan_ada_data}`], ['Defisit berturut-turut maks', b2.maks_defisit_berturut + ' bulan'], ['Pemasukan vs terdaftar', 'x' + b2.pemasukan_vs_terdaftar], ['Variasi pemasukan', String(b2.variasi_pemasukan)]]) : empty('Tidak ada data.'))}
+    ${card('Komposisi pengeluaran', 'B2', b2 ? bars([['Cashless', b2.pct_cashless], ['Kartu', b2.pct_kartu], ['Transfer', b2.pct_transfer], ['Tagihan', b2.pct_tagihan], ['Tarik tunai', b2.pct_tunai], ['Cicilan', b2.pct_cicilan]].map(([l, v]) => ({label: l, value: v || 0, text: pct(v || 0), tone: 'exp'})), {max: 100}) : empty('Tidak ada data.'))}
+    ${card('Sumber pemasukan', 'B3', src, {note: b3 ? `Sumber utama: ${esc(b3.sumber_utama)}; ${b3.pengirim_unik} pengirim berbeda.` : ''})}
+    ${card('Kategori merchant teratas', 'B4', mer)}
+    ${card('Tren 3 bulan terakhir', 'B5', b5 ? kv([['Pemasukan', `${rp(b5.pemasukan_3b)} (${b5.pemasukan_berubah_pct == null ? '-' : (b5.pemasukan_berubah_pct > 0 ? '+' : '') + n0(b5.pemasukan_berubah_pct) + '%'})`], ['Pengeluaran', `${rp(b5.pengeluaran_3b)} (${b5.pengeluaran_berubah_pct == null ? '-' : (b5.pengeluaran_berubah_pct > 0 ? '+' : '') + n0(b5.pengeluaran_berubah_pct) + '%'})`], ['Peringatan', T(b5.peringatan, b5.peringatan === 'NORMAL' ? 'good' : 'warn'), true]]) : empty('Tidak ada data.'), {note: 'Jul-Sep 2026 dibanding Apr-Jun 2026.'})}
+  </div>`;
+}
+function tabFitur(c) {
+  const id = c.customer_id, c1 = rowsOf('C1', id), c2 = one('C2', id), c3 = one('C3', id), c4 = one('C4', id), c5 = rowsOf('C5', id);
+  const groups = {};
+  for (const r of c1) (groups[r.category] ||= []).push(r);
+  const order = ['TRANSACTION', 'INQUIRY', 'CREDIT', 'SETTING', 'INFO'];
+  const grid = order.filter(k => groups[k]).map(k => `<div class="fgroup"><h4>${CAT[k]}</h4><div class="fchips">${groups[k].map(r => `<div class="fc ${r.status === 'DIPAKAI' ? 'used' : r.status === 'HANYA DIBUKA' ? 'open' : 'none'}"><b>${esc(ft(r.feature_code))}</b><small>${r.status === 'BELUM PERNAH DIBUKA' ? 'belum dibuka' : `buka ${n0(r.n_buka)} · selesai ${n0(r.n_selesai)}`}</small></div>`).join('')}</div></div>`).join('') + `<div class="legend"><span><i style="background:var(--good)"></i>Dipakai</span><span><i style="background:var(--warn)"></i>Hanya dibuka</span><span><i style="background:var(--line)"></i>Belum pernah dibuka</span></div>`;
+  const adopt = c3 ? table([{h: 'Fitur', f: r => r.f}, {h: 'Status', f: r => T(r.s), raw: true}, {h: 'Hari ke buka', k: 'b', n: true}, {h: 'Hari ke pakai', k: 'p', n: true}],
+    [['Jadwal Bayar', 'jadwal_bayar'], ['Paylater', 'paylater'], ['KTA', 'kta'], ['Kartu', 'kartu']].map(([f, k]) => ({f, s: c3[k + '_status'], b: c3[k + '_hari_ke_buka'], p: c3[k + '_hari_ke_pakai']}))) : empty('Tidak ada data.');
+  return `<div class="grid">
+    ${card('Status fitur', 'C1', c1.length ? grid : empty('Tidak ada data.'), {span: true, note: 'Cek saldo tidak punya langkah lanjutan, jadi selalu berstatus hanya dibuka (dilihat saja).'})}
+    ${card('Ringkasan fitur', 'C2', c2 ? kv([['Dipakai', c2.n_fitur_dipakai], ['Hanya dibuka', c2.n_fitur_hanya_dibuka], ['Belum pernah dibuka', c2.n_fitur_belum_pernah], ['Kedalaman pakai', c2.kedalaman_pakai_pct + '%'], ['Hanya dibuka', (c2.fitur_hanya_dibuka || '-').split(', ').map(ft).join(', '), true], ['Belum pernah', (c2.fitur_belum_pernah || '-').split(', ').map(ft).join(', '), true]]) : empty('Tidak ada data.'))}
+    ${card('Adopsi fitur strategis', 'C3', adopt, {note: 'Hari dihitung sejak tanggal registrasi.'})}
+    ${card('Kebiasaan sesi', 'C4', c4 && c4.sesi_total ? kv([['Total sesi', n0(c4.sesi_total)], ['Sesi 90 hari', n0(c4.sesi_90h)], ['Hari aktif 90 hari', n0(c4.hari_aktif_90h)], ['Sesi per minggu', n1(c4.sesi_per_minggu_90h)], ['Sesi bertransaksi', pct(c4.pct_sesi_bertransaksi)], ['Sesi hanya melihat', pct(c4.pct_sesi_hanya_lihat)], ['Durasi rata-rata', n0(c4.rata_detik_per_sesi) + ' detik'], ['Jam login tersering', String(c4.jam_login_tersering).padStart(2, '0') + ':00'], ['Metode login', c4.metode_login_tersering], ['Fitur pertama dibuka', ft(c4.fitur_pertama_tersering)]]) : empty('Tidak ada sesi.'))}
+    ${card('Target edukasi fitur', 'C5', c5.length ? table([{h: 'Fitur', f: r => ft(r.feature_code)}, {h: 'Dibuka 180 hari', k: 'n_buka_180h', n: true}, {h: 'Interaksi', k: 'n_interaksi', n: true}, {h: 'Selesai', k: 'n_selesai', n: true}, {h: 'Saran', k: 'saran'}], c5) : empty('Tidak ada fitur yang sering dibuka tetapi tidak pernah diselesaikan.'))}
+  </div>`;
+}
+function tabGajian(c) {
+  const id = c.customer_id, d1 = one('D1', id), d2 = one('D2', id), d3 = one('D3', id), d4 = rowsOf('D4', id), d5 = one('D5', id);
+  const cyc = d4.length ? singleBars(d4.map(r => ({label: mon(r.gaji_tgl), v: r.saldo_sebelum_pct_gaji, c: r.saldo_sebelum_pct_gaji < 5 ? 'var(--bad)' : r.saldo_sebelum_pct_gaji < 20 ? 'var(--warn)' : 'var(--accent)'})), {fmt: v => n0(v) + '%', max: Math.max(100, ...d4.map(r => Math.min(r.saldo_sebelum_pct_gaji, 200))), aria: 'Saldo sebelum gajian dalam persen gaji', every: 2, line: 5, h: 150}) : '';
+  return `<div class="grid">
+    ${card('Pola uang masuk utama', 'D1', d1 ? kv([['Jenis pola', d1.jenis_pola], ['Tanggal tersering', d1.tanggal_masuk_tersering == null ? '-' : 'tgl ' + d1.tanggal_masuk_tersering], ['Posisi di bulan', d1.posisi_di_bulan], ['Simpangan tanggal', d1.simpangan_tgl == null ? '-' : d1.simpangan_tgl + ' hari'], ['Kestabilan', T(d1.kelas, d1.kelas === 'TETAP' ? 'good' : d1.kelas === '-' ? '' : 'warn'), true], ['Pemberi gaji', d1.employer || '-'], ['Nominal rata-rata', rp(d1.nominal_rata)], ['Bulan terdeteksi', d1.bulan_terdeteksi ?? '-']]) : empty('Tidak ada data.'))}
+    ${card('Respons saat gaji masuk', 'D2', d2 ? kv([['Gaji masuk 12 bulan', d2.gaji_masuk_12bln], ['Median ke login', n0(d2.median_menit_ke_login) + ' menit'], ['Login dalam 1 jam', pct(d2.pct_login_dalam_1jam)], ['Login dalam 24 jam', pct(d2.pct_login_dalam_24jam)], ['Notifikasi dibuka', pct(d2.pct_notif_dibuka)], ['Kebiasaan', d2.kebiasaan, true]]) : empty('Tidak ada gaji tetap terdeteksi, jadi respons gaji tidak dihitung.'))}
+    ${card('Belanja dalam siklus gaji', 'D3', d3 ? bars([['Hari 0-2', d3.pct_hari_0_2], ['Hari 3-6', d3.pct_hari_3_6], ['Hari 7-13', d3.pct_hari_7_13], ['Hari 14-20', d3.pct_hari_14_20], ['Hari 21+', d3.pct_hari_21_plus]].map(([l, v]) => ({label: l, value: v, text: pct(v)})), {max: 50}) + `<p class="note">Tipe: <b>${esc(d3.tipe_belanja)}</b>; indeks hari 0-2 = ${d3.indeks_hari_0_2} (100 = rata-rata).</p>` : empty('Dihitung untuk nasabah bergaji dengan minimal 6 siklus.'))}
+    ${card('Kesiapan menjelang gajian', 'D5', d5 ? kv([['Kesiapan', T(d5.kesiapan, d5.kesiapan === 'Aman' ? 'good' : 'warn'), true], ['Saldo sebelum gaji', pct(d5.rata_saldo_sebelum_pct_gaji) + ' dari gaji'], ['Siklus saldo hampir habis', pct(d5.pct_siklus_saldo_habis)], ['Siklus ada gagal saldo', pct(d5.pct_siklus_ada_gagal_saldo)], ['Gaji ditabung (3 hari)', pct(d5.rata_pct_gaji_ditabung)], ['Gaji ditransfer (3 hari)', pct(d5.rata_pct_gaji_transfer)], ['Gaji untuk bayar rutin', pct(d5.rata_pct_gaji_bayar_rutin)], ['Gaji untuk belanja', pct(d5.rata_pct_gaji_belanja)]]) : empty('Tidak ada siklus gaji.'))}
+    ${d4.length ? card('Saldo sebelum tiap gajian', 'D4', cyc, {span: true, note: 'Persen dari gaji. Garis merah putus-putus: 5% (hampir habis).'}) : ''}
+  </div>`;
+}
+function tabCicilan(c) {
+  const id = c.customer_id, e1 = rowsOf('E1', id), e2 = rowsOf('E2', id), e3 = rowsOf('E3', id), e4 = one('E4', id), e5 = one('E5', id), e6 = one('E6', id);
+  const f1 = one('F1', id), f2 = rowsOf('F2', id), f3 = rowsOf('F3', id), f4 = rowsOf('F4', id);
+  if (!e1.length && !e3.length && !f4.length && !f1?.pinjaman_total) return `<div class="grid">${card('Tidak punya cicilan', 'E1', empty('Nasabah ini tidak punya pinjaman paylater atau KTA, sehingga bagian cicilan dan jadwal cicilan kosong.'))}${e3.length ? '' : ''}</div>`;
+  const prod = e1.map(r => card('Ketepatan bayar ' + r.product_code, 'E1', kv([['Tanggal jatuh tempo', 'tgl ' + r.tgl_jatuh_tempo], ['Dibayar', r.angsuran_dibayar], ['Belum dibayar / akan datang', `${r.angsuran_belum_dibayar} / ${r.angsuran_akan_datang}`], ['Telat', `${r.n_telat} (${pct(r.pct_telat)})`], ['Telat lebih 3 hari', r.n_telat_lebih_3h], ['Rata-rata hari telat', r.rata_hari_telat], ['Denda', rp(r.total_denda)], ['Via mobile / ATM / jadwal', `${r.via_mobile} / ${r.via_atm} / ${r.via_jadwal_bayar}`]]) + bars([{label: 'Dibayar via Jadwal Bayar', value: r.pct_via_jadwal || 0, text: pct(r.pct_via_jadwal || 0), tone: 'good'}, {label: 'Telat', value: r.pct_telat || 0, text: pct(r.pct_telat || 0), tone: 'bad'}], {max: 100}))).join('');
+  const pola = e2.length ? table([{h: 'Produk', k: 'product_code'}, {h: 'Pola', f: r => T(r.pola, r.pola === 'Rutin tepat' ? 'good' : r.pola === 'Rutin tapi telat' ? 'warn' : 'bad'), raw: true}, {h: 'Jatuh tempo', k: 'tgl_jatuh_tempo', n: true}, {h: 'Bayar tersering', k: 'tgl_bayar_tersering', n: true}, {h: 'Offset rata-rata', k: 'rata_offset', n: true}, {h: 'Simpangan', k: 'simpangan_offset', n: true}, {h: '% telat', k: 'pct_telat', n: true}, {h: '% via jadwal', k: 'pct_via_jadwal', n: true}, {h: 'Jam bayar manual', f: r => r.jam_bayar_manual_tersering == null ? '-' : String(r.jam_bayar_manual_tersering).padStart(2, '0') + ':00', n: true}, {h: 'Hari setelah gajian', k: 'hari_setelah_gajian_jatuh_tempo', n: true}], e2) : empty('Belum cukup pembayaran (minimal 4 dalam 12 bulan).');
+  const tag = e3.length ? table([{h: 'Biller', k: 'biller_name'}, {h: 'Kategori', k: 'kategori_biller'}, {h: 'Bulan dibayar', f: r => r.bulan_dibayar_dari_12 + '/12', n: true}, {h: 'Tanggal', k: 'tgl_bayar_tersering', n: true}, {h: 'Simpangan', k: 'simpangan_tgl', n: true}, {h: 'Nominal', f: r => rp(r.rata_nominal), n: true}, {h: '% via jadwal', k: 'pct_via_jadwal', n: true}], e3) : empty('Tidak ada tagihan yang dibayar rutin minimal 6 bulan.');
+  const sched = f1 ? kv([['Cicilan', T(f1.status_jadwal_cicilan), true], ['Tagihan/transfer', T(f1.status_jadwal_tagihan_transfer), true], ['Jadwal cicilan aktif / batal', `${f1.jadwal_cicilan_aktif} / ${f1.jadwal_cicilan_batal}`], ['Jadwal tagihan aktif / batal', `${f1.jadwal_tagihan_aktif} / ${f1.jadwal_tagihan_batal}`], ['Jadwal transfer aktif / batal', `${f1.jadwal_transfer_aktif} / ${f1.jadwal_transfer_batal}`], ['Eksekusi (berhasil/gagal)', `${f1.eksekusi} (${f1.berhasil}/${f1.gagal})`], ['Buka / selesaikan menu', `${f1.buka_menu_jadwal} / ${f1.selesai_menu_jadwal}`], ['Pertama dibuat', dmy(f1.pertama_dibuat)]]) : '';
+  const ba = f2.length ? table([{h: 'Produk', k: 'product_code'}, {h: 'Aktif sejak', f: r => dmy(r.tgl_aktif)}, {h: 'Telat sebelum', f: r => `${r.telat_sebelum}/${r.n_sebelum}`, n: true}, {h: 'Telat sesudah', f: r => `${r.telat_sesudah}/${r.n_sesudah}`, n: true}, {h: 'Dampak', f: r => T(r.dampak.startsWith('Data') ? 'Data belum cukup' : r.dampak), raw: true}], f2) : empty('Nasabah belum pernah membuat jadwal cicilan.');
+  const opp = f3.length ? table([{h: 'Produk', k: 'product_code'}, {h: 'Dibayar', k: 'n_bayar', n: true}, {h: 'Manual', k: 'n_manual', n: true}, {h: '% telat', k: 'pct_telat', n: true}, {h: 'Buka menu', k: 'buka_menu_jadwal', n: true}, {h: 'Riwayat', k: 'riwayat_jadwal'}, {h: 'Prioritas', f: r => T(r.prioritas), raw: true}], f3) : empty('Tidak ada peluang: pembayaran sudah via Jadwal Bayar atau belum cukup rutin.');
+  const sl = f4.length ? table([{h: 'Jadwal', k: 'label'}, {h: 'Tipe', k: 'payment_type'}, {h: 'Tgl', k: 'day_of_month', n: true}, {h: 'Status', f: r => T(r.status, r.status === 'ACTIVE' ? 'good' : 'warn'), raw: true}, {h: 'Umur (hari)', k: 'umur_hari', n: true}, {h: 'Eksekusi', k: 'run_count', n: true}, {h: '% gagal', k: 'pct_gagal', n: true}, {h: 'Alasan batal', f: r => r.cancel_reason || '-'}], f4) : empty('Tidak ada jadwal bayar.');
+  return `<div class="grid">
+    ${e4 ? card('Beban dan kepatuhan', 'E4', kv([['Pinjaman aktif', `${e4.pinjaman_aktif} (paylater ${e4.paylater_aktif}, KTA ${e4.kta_aktif})`], ['Cicilan per bulan', rp(e4.cicilan_bulanan)], ['Beban terhadap penghasilan', `${pct(e4.beban_pct_penghasilan)} · ${e4.kategori_beban}`], ['Sisa pokok', rp(e4.sisa_pokok)], ['Telat 6 bulan', `${e4.n_telat_6bln} dari ${e4.n_bayar_6bln}`], ['Denda 6 bulan', rp(e4.denda_6bln)], ['Gagal bayar karena saldo (12 bln)', e4.gagal_bayar_saldo_12bln], ['Risiko keterlambatan', e6 ? `${T(e6.risiko)} <span class="num">${e6.skor_risiko}</span>` : '-', !!e6]])) : ''}
+    ${prod}
+    ${card('Pola waktu bayar', 'E2', pola, {span: true, note: 'Offset negatif berarti membayar lebih awal dari jatuh tempo.'})}
+    ${card('Tagihan rutin', 'E3', tag, {span: true})}
+    ${e5 ? card('Pembayaran gagal 12 bulan', 'E5', kv([['Cicilan gagal / sukses', `${e5.cicilan_gagal} / ${e5.cicilan_sukses}`], ['Tagihan gagal / sukses', `${e5.tagihan_gagal} / ${e5.tagihan_sukses}`], ['Karena saldo', e5.gagal_saldo_tidak_cukup], ['Karena gangguan teknis', e5.gagal_teknis], ['Gagal saat jadwal bayar', e5.gagal_saat_jadwal_bayar], ['Berhasil dalam 24 jam', pct(e5.pct_berhasil_24jam_kemudian)]])) : ''}
+    ${card('Status Jadwal Bayar', 'F1', sched)}
+    ${card('Sebelum vs sesudah jadwal', 'F2', ba)}
+    ${card('Peluang aktivasi', 'F3', opp)}
+    ${card('Daftar jadwal', 'F4', sl, {span: true})}
+  </div>`;
+}
+function funnel(r) {
+  if (!r) return '';
+  const st = ['BELUM PERNAH MEMBUKA', 'HANYA MEMBUKA MENU', 'DITOLAK', 'DISETUJUI BELUM DIPAKAI', 'MEMAKAI'];
+  const pos = r.posisi_funnel, lvl = pos === 'BELUM PERNAH MEMBUKA' ? -1 : pos === 'HANYA MEMBUKA MENU' ? 0 : pos === 'DITOLAK' ? 1 : pos === 'DISETUJUI BELUM DIPAKAI' ? 2 : 3;
+  const labs = ['Buka menu', 'Ajukan', 'Hasil', 'Pinjaman'];
+  const cls = i => i === lvl ? 'on' : i < lvl ? 'done' : '';
+  const hasil = pos === 'DITOLAK' ? 'Ditolak' : (r.n_disetujui > 0 ? 'Disetujui' : 'Hasil');
+  return `<div class="steps" style="grid-template-columns:repeat(4,minmax(0,1fr))">${[`Buka menu<br>${r.n_buka_menu}x`, `Ajukan<br>${r.n_pengajuan}x`, `${hasil}<br>${r.n_disetujui}/${r.n_ditolak}`, `Pinjaman<br>${r.n_pinjaman}`].map((t, i) => `<div class="step ${i === 2 && pos === 'DITOLAK' ? 'bad' : cls(i === 0 ? 0 : i === 1 ? (r.n_pengajuan ? 1 : 99) : i === 2 ? (r.n_disetujui || r.n_ditolak ? 2 : 99) : (r.n_pinjaman ? 3 : 99))}">${t}</div>`).join('')}</div><p class="note" style="margin:6px 0 0">Posisi: <b>${esc(pos)}</b>${r.alasan_tolak_terakhir ? ` · ditolak: ${esc(r.alasan_tolak_terakhir)}` : ''}${r.limit_disetujui ? ` · limit ${rp(r.limit_disetujui)}` : ''}</p>`;
+}
+function tabKredit(c) {
+  const id = c.customer_id, g1 = rowsOf('G1', id), g2 = one('G2', id), g3 = rowsOf('G3', id), g4 = one('G4', id);
+  const pl = g1.find(r => r.product_code === 'PAYLATER'), kt = g1.find(r => r.product_code === 'KTA');
+  return `<div class="grid">
+    ${card('Funnel paylater', 'G1', funnel(pl))}
+    ${card('Funnel KTA', 'G1', funnel(kt))}
+    ${card('Pemakaian paylater', 'G2', g2 ? kv([['Pembelian (total / 12 bln)', `${g2.pembelian_total} / ${g2.pembelian_12bln}`], ['Nominal 12 bulan', rp(g2.nominal_12bln)], ['Rata-rata per pembelian', rp(g2.rata_nominal)], ['Rata-rata tenor', g2.rata_tenor + ' bulan'], ['Kategori terbanyak', g2.kategori_terbanyak], ['Pembelian terakhir', dmy(g2.pembelian_terakhir)], ['Beli menjelang gajian', g2.pct_beli_menjelang_gajian == null ? '-' : pct(g2.pct_beli_menjelang_gajian)], ['Limit', rp(g2.limit_paylater)], ['Sisa pokok', rp(g2.sisa_pokok)], ['Utilisasi', `${pct(g2.utilisasi_limit_pct)} · ${g2.kategori_utilisasi}`]]) : empty('Nasabah belum pernah memakai paylater.'))}
+    ${card('Pinjaman KTA', 'G3', g3.length ? g3.map(r => `<div style="margin-bottom:12px">${kv([['Pinjaman', `#${r.loan_id} · ${r.status}`], ['Pokok / tenor', `${rp(r.pokok)} / ${r.tenor_months} bln`], ['Bunga / cicilan', `${r.interest_rate_pa}% / ${rp(r.cicilan_bulanan)}`], ['Cair', dmy(r.tgl_cair)], ['Terbayar', `${r.n_dibayar} dari ${r.n_total} (telat ${r.n_telat})`], ['Penggunaan utama 7 hari', r.penggunaan_utama_7h], ['Pokok terpakai 7 hari', r.pct_pokok_terpakai_7h + '%']])}${bars([{label: 'Transfer', value: r.transfer_keluar_7h, text: rp(r.transfer_keluar_7h)}, {label: 'Tarik tunai', value: r.tarik_tunai_7h, text: rp(r.tarik_tunai_7h)}, {label: 'Belanja', value: r.belanja_7h, text: rp(r.belanja_7h)}, {label: 'Ditabung', value: r.ditabung_7h, text: rp(r.ditabung_7h)}, {label: 'Tagihan', value: r.bayar_tagihan_7h, text: rp(r.bayar_tagihan_7h)}])}</div>`).join('') : empty('Nasabah belum punya pinjaman KTA.'))}
+    ${card('Profil risiko kredit', 'G4', g4 ? kv([['Tingkat', `${T(g4.tingkat_risiko)} <span class="num">skor ${g4.skor_risiko}</span>`, true], ['Pinjaman aktif', g4.pinjaman_aktif], ['Beban cicilan', `${pct(g4.beban_pct_penghasilan)} · ${g4.kategori_beban}`], ['Arus kas', `${g4.kategori_arus} (${g4.bulan_defisit} bln defisit)`], ['Telat 6 bulan', g4.pct_telat_6bln == null ? '-' : pct(g4.pct_telat_6bln)]]) : empty('Tidak punya pinjaman aktif.'), {note: 'Skor 0-100: beban cicilan, bulan defisit, keterlambatan, tumpukan pinjaman. Bobot bisa diubah di query.'})}
+  </div>`;
+}
+function tabKartu(c) {
+  const id = c.customer_id, h1 = rowsOf('H1', id), h2 = one('H2', id), h3 = one('H3', id);
+  const cards = h1.map(r => kv([['Kartu', `${r.network} ${r.card_type}${r.is_contactless ? ' · contactless' : ''}`], ['Status pemakaian', T(r.status_pemakaian, r.status_pemakaian === 'AKTIF' ? 'good' : 'warn'), true], ['Transaksi (total / 12 bln)', `${n0(r.trx_total)} / ${n0(r.trx_12bln)}`], ['Nominal total', rp(r.nominal_total)], ['Rata-rata tiket', rp(r.rata_tiket)], ['Online aktif sejak', dmy(r.online_aktif_sejak)], ['Luar negeri aktif sejak', dmy(r.luar_negeri_aktif_sejak)], ['Terakhir dipakai', r.terakhir_dipakai ? `${dmy(r.terakhir_dipakai)} (${r.hari_sejak_terakhir_pakai} hari)` : '-'], ['Jeda aktivasi online ke pakai', r.hari_aktivasi_online_ke_pakai == null ? '-' : r.hari_aktivasi_online_ke_pakai + ' hari']]) + bars([['Contactless', r.pct_contactless], ['POS', r.pct_pos], ['Online', r.pct_online], ['Luar negeri', r.pct_luar_negeri]].map(([l, v]) => ({label: l, value: v || 0, text: pct(v || 0)})), {max: 100})).join('<hr style="border:0;border-top:1px solid var(--line);margin:12px 0">');
+  const q = h2 ? [['K4 25', h2.pct_cashless_q4_2025], ['K1 26', h2.pct_cashless_q1_2026], ['K2 26', h2.pct_cashless_q2_2026], ['K3 26', h2.pct_cashless_q3_2026]] : [];
+  return `<div class="grid">
+    ${card('Kartu', 'H1', h1.length ? cards : empty('Nasabah tidak punya kartu.'))}
+    ${card('Kebiasaan cashless', 'H2', h2 ? bars(q.map(([l, v]) => ({label: l, value: v || 0, text: v == null ? '-' : pct(v), tone: 'good'})), {max: 100}) + `<div style="margin-top:10px">${kv([['12 bulan', `${pct(h2.pct_cashless_12bln)} · ${h2.kategori_cashless}`], ['Cashless / tunai', `${rp(h2.cashless_12bln)} / ${rp(h2.tunai_12bln)}`], ['Perubahan K4 25 ke K3 26', h2.perubahan_poin == null ? '-' : n1(h2.perubahan_poin) + ' poin'], ['Kartu via Visa', h2.pct_kartu_via_visa == null ? '-' : pct(h2.pct_kartu_via_visa)], ['Transaksi luar negeri', `${h2.trx_luar_negeri} (${rp(h2.nominal_luar_negeri)})`], ['Mata uang asing utama', h2.mata_uang_asing_utama || '-']])}</div>` : empty('Tidak ada data.'))}
+    ${card('Transaksi kartu ditolak', 'H3', h3 ? kv([['Sukses / ditolak', `${n0(h3.kartu_sukses)} / ${h3.kartu_ditolak}`], ['Persen ditolak', pct(h3.pct_ditolak)], ['Karena saldo', h3.ditolak_saldo], ['Karena teknis', h3.ditolak_teknis], ['Online / contactless / POS / luar negeri', `${h3.ditolak_online} / ${h3.ditolak_contactless} / ${h3.ditolak_pos} / ${h3.ditolak_luar_negeri}`]]) : empty('Tidak ada transaksi kartu.'))}
+  </div>`;
+}
+function tabEngagement(c) {
+  const id = c.customer_id, i1 = rowsOf('I1', id).slice(-24), i2 = one('I2', id), i3 = one('I3', id), i4 = one('I4', id), i5 = one('I5', id), i6 = one('I6', id), i7 = one('I7', id), i8 = one('I8', id), i9 = one('I9', id);
+  const act = i1.length ? singleBars(i1.map(r => ({label: mon(r.bulan), v: r.hari_aktif, c: r.tingkat_aktivitas === 'Sangat sering' ? 'var(--good)' : r.tingkat_aktivitas === 'Rutin' ? 'var(--accent)' : 'var(--warn)'})), {aria: 'Hari aktif per bulan', every: 3, h: 140}) + `<div class="legend"><span><i style="background:var(--good)"></i>Sangat sering (≥ 50% hari)</span><span><i style="background:var(--accent)"></i>Rutin (≥ 20%)</span><span><i style="background:var(--warn)"></i>Jarang</span></div>` : empty('Tidak ada sesi.');
+  const comp = i9 ? bars([['Keaktifan', i9.skor_aktif, 30], ['Keragaman fitur', i9.skor_fitur, 20], ['Ketepatan cicilan', i9.skor_cicilan, 25], ['Arus kas', i9.skor_arus_kas, 25]].map(([l, v, m]) => ({label: l, value: 100 * v / m, text: `${n1(v)}/${m}`, tone: v / m >= .7 ? 'good' : v / m >= .4 ? 'warn' : 'bad'})), {max: 100}) : '';
+  const nt = i4 ? table([{h: 'Kategori', f: r => r.k}, {h: 'Terkirim', k: 's', n: true}, {h: 'Dibuka', k: 'o', n: true}, {h: '% buka', f: r => r.s ? n0(100 * r.o / r.s) + '%' : '-', n: true}], [{k: 'Promo', s: i4.promo_kirim, o: i4.promo_buka}, {k: 'Gaji masuk', s: i4.gaji_kirim, o: i4.gaji_buka}, {k: 'Pengingat tagihan', s: i4.pengingat_tagihan_kirim, o: i4.pengingat_tagihan_buka}, {k: 'Pengingat jadwal', s: i4.pengingat_jadwal_kirim, o: i4.pengingat_jadwal_buka}]) + `<p class="note">Median ${i4.median_menit_ke_buka == null ? '-' : n0(i4.median_menit_ke_buka) + ' menit'} sampai dibuka; ${pct(i4.pct_diikuti_login_3jam)} notifikasi diikuti login dalam 3 jam. Push ${i4.push_enabled ? 'aktif' : 'nonaktif'}.</p>` : '';
+  return `<div class="grid">
+    ${card('Hari aktif per bulan', 'I1', act, {span: true, note: 'Hari aktif = jumlah tanggal berbeda dengan login sukses.'})}
+    ${card('Skor kesehatan', 'I9', i9 ? `<p style="margin:0 0 8px"><span class="num" style="font-size:28px;font-weight:800">${n0(i9.skor_total)}</span> / 100 ${T(i9.kategori)}</p>${comp}` : empty('Tidak ada data.'))}
+    ${card('Siklus hidup', 'I2', i2 ? kv([['Tahap', T(i2.tahap), true], ['Registrasi', dmy(i2.tgl_registrasi)], ['Usia', i2.usia_bulan + ' bulan'], ['Login pertama / terakhir', `${dmy(i2.login_pertama)} / ${dmy(i2.login_terakhir)}`], ['Bulan aktif', `${i2.bulan_aktif} (${i2.pct_bulan_aktif}%)`], ['Total sesi', n0(i2.sesi_total)]]) : '')}
+    ${card('RFM dan peringatan churn', 'I6', (i6 ? kv([['Segmen RFM', i6.segmen], ['Skor R / F / M', `${i6.skor_r} / ${i6.skor_f} / ${i6.skor_m}`], ['Transaksi 90 hari', n0(i6.frekuensi_90h)], ['Belanja 90 hari', rp(i6.moneter_90h)]]) : '') + (i7 ? '<hr style="border:0;border-top:1px solid var(--line);margin:10px 0">' + kv([['Peringatan', T(i7.peringatan), true], ['Login 90 hari (lalu → terakhir)', `${i7.login_90h_sebelumnya} → ${i7.login_90h_terakhir}`], ['Perubahan login', i7.perubahan_login_pct == null ? '-' : i7.perubahan_login_pct + '%'], ['Transaksi 90 hari (lalu → terakhir)', `${i7.trx_90h_sebelumnya} → ${i7.trx_90h_terakhir}`]]) : ''), {note: 'RFM di sini dihitung terhadap seluruh nasabah database, bukan hanya 25 nasabah yang ditampilkan.'})}
+    ${card('Login', 'I3', i3 ? bars([['Biometrik', i3.pct_biometrik], ['PIN', i3.pct_pin], ['Password', i3.pct_password]].map(([l, v]) => ({label: l, value: v, text: pct(v)})), {max: 100}) + `<div style="margin-top:8px">${kv([['Percobaan 12 bulan', n0(i3.percobaan_login)], ['Gagal', `${i3.login_gagal} (${pct(i3.pct_gagal)})`], ['Gagal biometrik / PIN / password', `${i3.gagal_biometrik} / ${i3.gagal_pin} / ${i3.gagal_password}`], ['Biometrik diaktifkan', yesno(i3.biometric_enabled)], ['Perangkat dipakai', i3.jml_perangkat_dipakai]])}</div>` : empty('Tidak ada login 12 bulan terakhir.'))}
+    ${card('Notifikasi', 'I4', nt || empty('Tidak ada notifikasi.'))}
+    ${card('Transaksi gagal', 'I5', i5 ? kv([['Percobaan / gagal', `${n0(i5.percobaan)} / ${n0(i5.gagal)}`], ['Persen gagal', `${pct(i5.pct_gagal)} · ${i5.tingkat_kegagalan}`], ['Saldo tidak cukup', i5.gagal_saldo], ['Gangguan teknis', i5.gagal_teknis], ['Ditolak bank penerima', i5.ditolak_bank_penerima], ['Gagal mobile lalu berhasil dalam 30 menit', i5.pct_gagal_mobile_berhasil_30mnt == null ? '-' : pct(i5.pct_gagal_mobile_berhasil_30mnt)]]) : empty('Tidak ada data.'))}
+    ${card('Perangkat', 'I8', i8 ? kv([['Perangkat utama', `${i8.perangkat_utama || '-'} (${i8.os_utama || '-'})`], ['Versi aplikasi', i8.versi_aplikasi || '-'], ['Perangkat aktif / total', `${i8.perangkat_aktif} / ${i8.jml_perangkat}`], ['Terakhir dipakai', dmy(i8.terakhir_dipakai)], ['Gagal teknis mobile', i8.pct_gagal_teknis == null ? '-' : pct(i8.pct_gagal_teknis)]]) : '')}
+  </div>`;
+}
+function tabData(c) {
+  const id = c.customer_id;
+  const labs = Object.keys(DATA).sort((a, b) => a.localeCompare(b));
+  return `<p class="note" style="margin:0 0 10px">Setiap query mengembalikan baris dengan customer_id. Di bawah ini baris mentah untuk nasabah ini (${c.customer_id}).</p><div class="qlist">${labs.map(l => {
+    const rs = rowsOf(l, id);
+    const cols = rs.length ? Object.keys(rs[0]).filter(k => k !== 'customer_id').map(k => ({h: k, f: r => { const v = r[k]; return v == null ? '' : typeof v === 'boolean' ? (v ? 'ya' : 'tidak') : v; }, n: typeof rs[0][k] === 'number'})) : [];
+    return `<details><summary><span class="qcode">${l}</span><span>${esc(TITLES[l] || '')}</span><span>${rs.length} baris</span></summary><div class="body">${rs.length ? table(cols, rs, {limit: 40}) : empty('Tidak ada baris untuk nasabah ini.')}</div></details>`;
+  }).join('')}</div>`;
+}
+const TABS = [['ringkasan', 'Ringkasan', tabRingkasan], ['transaksi', 'Transaksi', tabTransaksi], ['arus', 'Arus kas', tabArus], ['fitur', 'Fitur', tabFitur], ['gajian', 'Gajian', tabGajian], ['cicilan', 'Cicilan & jadwal', tabCicilan], ['kredit', 'Paylater & KTA', tabKredit], ['kartu', 'Kartu', tabKartu], ['engagement', 'Engagement', tabEngagement], ['data', 'Data query', tabData]];
+
+/* ---------- shell ---------- */
+const state = {id: null, tab: 'ringkasan', q: '', group: 'Semua'};
+const GROUPS = ['Semua', 'Aktif tinggi', 'Aktif ringan', 'Berhenti', 'Berkredit', 'Tanpa kredit'];
+function groupsOf(c) {
+  const g = [];
+  if (c.tahap_siklus && c.tahap_siklus.startsWith('CHURN')) g.push('Berhenti');
+  else if (c.spark >= 150) g.push('Aktif tinggi'); else g.push('Aktif ringan');
+  g.push(c.pinjaman_aktif > 0 ? 'Berkredit' : 'Tanpa kredit');
+  return g;
+}
+function renderList() {
+  $('#chips').innerHTML = GROUPS.map(g => `<button class="chip" type="button" aria-pressed="${state.group === g}" data-g="${g}">${ico(CHI[g] || 'dots')}${g}</button>`).join('');
+  const q = state.q.toLowerCase();
+  const list = CUST.filter(c => (state.group === 'Semua' || groupsOf(c).includes(state.group)) && (!q || (c.full_name + ' ' + c.occupation + ' ' + c.persona).toLowerCase().includes(q)));
+  $('#cards').innerHTML = list.map(c => `<button class="ncard" type="button" data-id="${c.customer_id}" aria-current="${c.customer_id === state.id}">${av(c)}<div style="min-width:0"><h3>${esc(c.full_name)}</h3><div class="persona">${esc(c.persona)}</div><div class="mini"><span title="Skor kesehatan">${ico('gauge')}<b>${n0(c.skor_kesehatan)}</b></span><span title="Sesi 90 hari terakhir">${ico('phone')}<b>${n0(c.spark)}</b></span><span title="Transaksi keluar 12 bulan">${ico('swap')}<b>${n0(c.trx_keluar_12bln)}</b></span><span title="Pinjaman aktif">${ico('coins')}<b>${c.pinjaman_aktif ?? 0}</b></span></div></div></button>`).join('') || empty('Tidak ada nasabah yang cocok.');
+}
+function renderDetail() {
+  const c = CUST.find(x => x.customer_id === state.id);
+  if (!c) { $('#wrap').innerHTML = empty('Pilih nasabah di daftar.'); return; }
+  $('#topName').textContent = c.full_name;
+  const tab = TABS.find(t => t[0] === state.tab) || TABS[0];
+  $('#wrap').innerHTML = `<div class="hero">${av(c)}<div><h2>${esc(c.full_name)}</h2><p>${esc(c.occupation)} · ${esc(c.age_band.slice(2))} th · ${esc(c.city)} · <span class="mono">ID ${c.customer_id}</span></p><div style="display:flex;gap:6px;flex-wrap:wrap">${T(c.persona, 'acc')}${T(c.tahap_siklus)}</div></div></div>
+  <nav class="tabs" role="tablist" aria-label="Bagian">${TABS.map(t => `<button class="tab" role="tab" type="button" data-t="${t[0]}" aria-selected="${t[0] === state.tab}">${ico(TABI[t[0]] || 'dots')}${t[1]}</button>`).join('')}</nav>
+  <div role="tabpanel">${tab[2](c)}</div>
+  <p class="foot">Sumber: hasil query analisis_behaviour_per_nasabah.sql pada PostgreSQL lokal. Kode di pojok kartu (mis. B1) adalah nomor query; data buatan, bukan nasabah sebenarnya.</p>`;
+}
+function go(id, tab) {
+  state.id = id; if (tab) state.tab = tab;
+  try { history.replaceState(null, '', '#c' + id + (state.tab !== 'ringkasan' ? '-' + state.tab : '')); } catch (e) {}
+  $('#app').dataset.view = 'detail';
+  renderList(); renderDetail(); $('#detail').scrollTop = 0; window.scrollTo(0, 0);
+}
+function fromHash() {
+  const m = /^#c(\d+)(?:-(\w+))?$/.exec(location.hash);
+  if (m && CUST.some(c => c.customer_id === +m[1])) { state.id = +m[1]; if (m[2] && TABS.some(t => t[0] === m[2])) state.tab = m[2]; $('#app').dataset.view = 'detail'; }
+  else { state.id = state.id ?? CUST[0].customer_id; $('#app').dataset.view = 'list'; }
+  renderList(); renderDetail();
+}
+document.addEventListener('click', e => {
+  const n = e.target.closest('.ncard'); if (n) return go(+n.dataset.id);
+  const t = e.target.closest('.tab'); if (t) { state.tab = t.dataset.t; try { history.replaceState(null, '', '#c' + state.id + (state.tab !== 'ringkasan' ? '-' + state.tab : '')); } catch (e) {} renderDetail(); const w = $('.tabs'); if (w) w.scrollIntoView({block: 'start'}); return; }
+  const g = e.target.closest('.chip'); if (g) { state.group = g.dataset.g; renderList(); }
+});
+$('#q').addEventListener('input', e => { state.q = e.target.value; renderList(); });
+$('#back').addEventListener('click', () => { $('#app').dataset.view = 'list'; try { history.replaceState(null, '', location.pathname); } catch (e) {} });
+$('#themeBtn').addEventListener('click', () => {
+  const root = document.documentElement, dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+});
+window.addEventListener('hashchange', fromHash);
+$('#sub').textContent = `${CUST.length} nasabah contoh dari ${META_TOTAL()} hasil generate`;
+function META_TOTAL() { return window.__TOTAL__ || 150; }
+fromHash();
+</script>

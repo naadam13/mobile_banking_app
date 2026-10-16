@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mobile Banking Dummy</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1553e6"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{--bg:#f1f5fb;--card:#fff;--ink:#0f1b2d;--mut:#5b6b82;--line:#e2e8f2;--acc:#1553e6}
+@media (prefers-color-scheme:dark){:root{--bg:#0a1220;--card:#111b2e;--ink:#e6edf8;--mut:#98a8c0;--line:#22304a;--acc:#60a5fa}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(24px,env(safe-area-inset-top)) 16px 32px}
+main{max-width:520px;margin:0 auto}h1{font-size:24px;margin:8px 0 4px}p{color:var(--mut);margin:0 0 20px}
+a.c{display:block;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:12px;color:inherit;text-decoration:none}
+a.c:hover,a.c:focus-visible{border-color:var(--acc)}a.c b{display:block;font-size:17px;color:var(--acc)}a.c span{color:var(--mut);font-size:14px}
+small{display:block;color:var(--mut);margin-top:20px;font-size:13px}
+</style></head><body><main>
+<h1>Mobile Banking Dummy</h1><p>Dua halaman contoh dengan data fiktif. Setelah dibuka sekali saat online, keduanya bisa dipakai offline.</p>
+<a class="c" href="nasabah.html"><b>Ringkasan Keuangan Saya</b><span>Tampilan nasabah: pemasukan, pengeluaran, antisipasi tagihan, dan saran.</span></a>
+<a class="c" href="bank.html"><b>Halaman Bank</b><span>Analisis perilaku 25 nasabah dari sisi bank.</span></a>
+<small id="st">Memeriksa mode offline...</small>
+</main>
+<script>
+if(location.protocol==='file:')document.getElementById('st').textContent='Dibuka langsung dari file: semua halaman jalan tanpa internet. Fitur pasang ke layar utama hanya tersedia lewat alamat https (misalnya GitHub Pages).';else if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(()=>navigator.serviceWorker.ready).then(()=>{document.getElementById('st').textContent='Siap dipakai offline.'}).catch(()=>{document.getElementById('st').textContent='Mode offline tidak tersedia di peramban ini.'})}else document.getElementById('st').textContent='Mode offline tidak tersedia di peramban ini.';
+</script></body></html>

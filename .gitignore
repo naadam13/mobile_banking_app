@@ -1,0 +1,6 @@
+# keluaran generator (besar, bisa dibuat ulang)
+*.sql.gz
+mobile_banking*.sql
+!sql/*.sql
+__pycache__/
+.DS_Store
