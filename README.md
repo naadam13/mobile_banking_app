@@ -1,6 +1,8 @@
 # Mobile Banking Dummy: Generator Data dan Analitik Perilaku Nasabah
 
-Proyek portofolio data engineering. Saya membangun **generator data dummy mobile banking** untuk PostgreSQL, **46 query analitik per nasabah**, dan **dua halaman web** yang menampilkan hasilnya dari sisi nasabah dan sisi bank. Semua data fiktif.
+Proyek portofolio data engineering. Telah dibangun **generator data dummy mobile banking** untuk PostgreSQL, **46 query analitik per nasabah**, dan **dua halaman web** yang menampilkan hasilnya dari sisi nasabah dan sisi bank. Semua data fiktif.
+
+> **Demo:** `https://naadam13.github.io/mobile_banking_app/`
 
 | Sisi nasabah: "Ringkasan Keuangan Saya" | Sisi bank: "Peta Perilaku Nasabah" |
 |---|---|
@@ -25,7 +27,7 @@ docs/                                   halaman web hasil build (GitHub Pages) +
 
 ## Cara menjalankan
 
-Butuh Python 3.8+ dan PostgreSQL 13+ (saya uji di PostgreSQL 16).
+Butuh Python 3.8+ dan PostgreSQL 13+ (telah diuji di PostgreSQL 16).
 
 ```bash
 # 1) Buat data (150 nasabah, seed tetap: hasil selalu sama)
