@@ -2,8 +2,6 @@
 
 Proyek portofolio data engineering. Saya membangun **generator data dummy mobile banking** untuk PostgreSQL, **46 query analitik per nasabah**, dan **dua halaman web** yang menampilkan hasilnya dari sisi nasabah dan sisi bank. Semua data fiktif.
 
-> **Demo:** `https://<username>.github.io/<nama-repo>/` (ganti dengan alamat GitHub Pages Anda)
-
 | Sisi nasabah: "Ringkasan Keuangan Saya" | Sisi bank: "Peta Perilaku Nasabah" |
 |---|---|
 | <img src="docs/img/nasabah-ringkasan.png" width="280" alt="Ringkasan keuangan nasabah"> | <img src="docs/img/bank-detail.png" width="520" alt="Detail nasabah dari sisi bank"> |
@@ -138,7 +136,7 @@ python3 src/build.py
 
 `build.py` otomatis menaikkan `VERSION` di `docs/sw.js` bila HTML berubah, supaya pengunjung lama mendapat versi baru (pakai `--no-bump` untuk menonaktifkannya).
 
-Data di `src/data/` adalah snapshot tetap. Untuk menyegarkannya dari database sendiri, jalankan query di `sql/analisis_behaviour_per_nasabah.sql` untuk nasabah terpilih dan simpan hasilnya per kode query (A1 sampai Z1) sebagai JSON dengan struktur yang sama.
+Data di `src/data/` adalah snapshot tetap. Untuk memperbaruinya dari database sendiri, jalankan query di `sql/analisis_behaviour_per_nasabah.sql` untuk nasabah terpilih dan simpan hasilnya per kode query (A1 sampai Z1) sebagai JSON dengan struktur yang sama.
 
 ## Keputusan desain dan keterbatasan
 
